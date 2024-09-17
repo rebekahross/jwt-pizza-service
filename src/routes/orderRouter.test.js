@@ -18,9 +18,6 @@ async function createAdminUser() {
   return user;
 }
 
-let testUserAuthToken;
-let testUser;
-let registerRes;
 let adminUser;
 let loginAdminRes;
 let adminAuthToken;
@@ -33,11 +30,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  testUser = { name: randomName(), email: "reg@test.com", password: "a" };
-  testUser.email = randomName() + "@test.com";
-  registerRes = await request(app).post("/api/auth").send(testUser);
-  testUserAuthToken = registerRes.body.token;
-
   fakeMenuItem = {
     title: randomName(),
     description: randomName(),
@@ -56,4 +48,21 @@ test("get menu", async () => {
 
   expect(getMenuRes.status).toBe(200);
   expect(getMenuRes.body.length).toBeGreaterThanOrEqual(1);
+});
+
+test("add menu item", async () => {
+  const fakeMenuItem2 = {
+    title: randomName(),
+    description: randomName(),
+    image: randomName() + ".png",
+    price: 0.0001,
+  };
+
+  const addMenuRes = await request(app)
+    .put("/api/order/menu")
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(fakeMenuItem2);
+
+  expect(addMenuRes.status).toBe(200);
+  expect(addMenuRes.body.length).toBeGreaterThanOrEqual(2);
 });
