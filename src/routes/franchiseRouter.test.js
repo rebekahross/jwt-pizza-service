@@ -23,6 +23,9 @@ let registerRes;
 let adminUser;
 let loginAdminRes;
 let adminAuthToken;
+let franchiseName;
+let franchiseObject;
+let createFranchiseRes;
 
 beforeAll(async () => {
   adminUser = await createAdminUser();
@@ -35,6 +38,13 @@ beforeEach(async () => {
   testUser.email = randomName() + "@test.com";
   registerRes = await request(app).post("/api/auth").send(testUser);
   testUserAuthToken = registerRes.body.token;
+
+  franchiseName = randomName();
+  franchiseObject = { name: franchiseName, admins: [adminUser] };
+  createFranchiseRes = await request(app)
+    .post("/api/franchise")
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(franchiseObject);
 });
 
 test("create franchise", async () => {
@@ -50,29 +60,20 @@ test("create franchise", async () => {
 });
 
 test("create franchise with non-admin", async () => {
-  const franchiseName = randomName();
-  const franchiseObject = { name: franchiseName, admins: [adminUser] };
-
-  const createRes = await request(app)
+  const createFranchiseNoAdmin = await request(app)
     .post("/api/franchise")
     .set(`Authorization`, `Bearer ${testUserAuthToken}`)
     .send(franchiseObject);
 
-  expect(createRes.status).toBe(403);
-  expect(createRes.body.message).toBe("unable to create a franchise");
+  expect(createFranchiseNoAdmin.status).toBe(403);
+  expect(createFranchiseNoAdmin.body.message).toBe(
+    "unable to create a franchise"
+  );
 });
 
 test("delete franchise", async () => {
-  const franchiseName = randomName();
-  const franchiseObject = { name: franchiseName, admins: [adminUser] };
-
-  const createRes = await request(app)
-    .post("/api/franchise")
-    .set(`Authorization`, `Bearer ${adminAuthToken}`)
-    .send(franchiseObject);
-
   const deleteRes = await request(app)
-    .delete(`/api/franchise/${createRes.body.id}`)
+    .delete(`/api/franchise/${createFranchiseRes.body.id}`)
     .set(`Authorization`, `Bearer ${adminAuthToken}`)
     .send(franchiseObject);
 
@@ -81,16 +82,8 @@ test("delete franchise", async () => {
 });
 
 test("delete franchise with no admin", async () => {
-  const franchiseName = randomName();
-  const franchiseObject = { name: franchiseName, admins: [adminUser] };
-
-  const createRes = await request(app)
-    .post("/api/franchise")
-    .set(`Authorization`, `Bearer ${adminAuthToken}`)
-    .send(franchiseObject);
-
   const deleteRes = await request(app)
-    .delete(`/api/franchise/${createRes.body.id}`)
+    .delete(`/api/franchise/${createFranchiseRes.body.id}`)
     .set(`Authorization`, `Bearer ${testUserAuthToken}`)
     .send(franchiseObject);
 
@@ -99,22 +92,12 @@ test("delete franchise with no admin", async () => {
 });
 
 test("create store", async () => {
-  const franchiseName = randomName();
-  const franchiseObject = { name: franchiseName, admins: [adminUser] };
-
-  const createFranchiseRes = await request(app)
-    .post("/api/franchise")
-    .set(`Authorization`, `Bearer ${adminAuthToken}`)
-    .send(franchiseObject);
-
-  console.log(createFranchiseRes);
-
   const storeName = randomName();
   const storeObject = {
     name: storeName,
     franchiseId: createFranchiseRes.body.id,
   };
-  console.log(storeObject);
+
   const createStoreRes = await request(app)
     .post(`/api/franchise/${createFranchiseRes.body.id}/store`)
     .set(`Authorization`, `Bearer ${adminAuthToken}`)
@@ -123,4 +106,27 @@ test("create store", async () => {
   expect(createStoreRes.status).toBe(200);
   expect(createStoreRes.body.name).toBe(storeName);
   expect(createStoreRes.body.franchiseId).toBe(createFranchiseRes.body.id);
+});
+
+test("delete store", async () => {
+  const storeName = randomName();
+  const storeObject = {
+    name: storeName,
+    franchiseId: createFranchiseRes.body.id,
+  };
+
+  const createStoreRes = await request(app)
+    .post(`/api/franchise/${createFranchiseRes.body.id}/store`)
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(storeObject);
+
+  const deleteStoreRes = await request(app)
+    .delete(
+      `/api/franchise/${createFranchiseRes.body.id}/store/${createStoreRes.body.id}`
+    )
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(storeObject);
+
+  expect(deleteStoreRes.status).toBe(200);
+  expect(deleteStoreRes.body.message).toBe("store deleted");
 });
