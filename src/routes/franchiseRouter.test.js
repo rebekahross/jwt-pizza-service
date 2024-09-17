@@ -59,7 +59,7 @@ test("create franchise", async () => {
   expect(createRes.body.name).toBe(franchiseName);
 });
 
-test("create franchise with non-admin", async () => {
+test("create franchise with non-admin role", async () => {
   const createFranchiseNoAdmin = await request(app)
     .post("/api/franchise")
     .set(`Authorization`, `Bearer ${testUserAuthToken}`)
@@ -81,7 +81,7 @@ test("delete franchise", async () => {
   expect(deleteRes.body.message).toBe("franchise deleted");
 });
 
-test("delete franchise with no admin", async () => {
+test("delete franchise with non admin role", async () => {
   const deleteRes = await request(app)
     .delete(`/api/franchise/${createFranchiseRes.body.id}`)
     .set(`Authorization`, `Bearer ${testUserAuthToken}`)
@@ -108,6 +108,22 @@ test("create store", async () => {
   expect(createStoreRes.body.franchiseId).toBe(createFranchiseRes.body.id);
 });
 
+test("create store with non-admin role", async () => {
+  const storeName = randomName();
+  const storeObject = {
+    name: storeName,
+    franchiseId: createFranchiseRes.body.id,
+  };
+
+  const createStoreRes = await request(app)
+    .post(`/api/franchise/${createFranchiseRes.body.id}/store`)
+    .set(`Authorization`, `Bearer ${testUserAuthToken}`)
+    .send(storeObject);
+
+  expect(createStoreRes.status).toBe(403);
+  expect(createStoreRes.body.message).toBe("unable to create a store");
+});
+
 test("delete store", async () => {
   const storeName = randomName();
   const storeObject = {
@@ -129,4 +145,27 @@ test("delete store", async () => {
 
   expect(deleteStoreRes.status).toBe(200);
   expect(deleteStoreRes.body.message).toBe("store deleted");
+});
+
+test("delete store with non-admin role", async () => {
+  const storeName = randomName();
+  const storeObject = {
+    name: storeName,
+    franchiseId: createFranchiseRes.body.id,
+  };
+
+  const createStoreRes = await request(app)
+    .post(`/api/franchise/${createFranchiseRes.body.id}/store`)
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(storeObject);
+
+  const deleteStoreRes = await request(app)
+    .delete(
+      `/api/franchise/${createFranchiseRes.body.id}/store/${createStoreRes.body.id}`
+    )
+    .set(`Authorization`, `Bearer ${testUserAuthToken}`)
+    .send(storeObject);
+
+  expect(deleteStoreRes.status).toBe(403);
+  expect(deleteStoreRes.body.message).toBe("unable to delete a store");
 });
