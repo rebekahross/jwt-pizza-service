@@ -169,3 +169,19 @@ test("delete store with non-admin role", async () => {
   expect(deleteStoreRes.status).toBe(403);
   expect(deleteStoreRes.body.message).toBe("unable to delete a store");
 });
+
+test("get all franchises", async () => {
+  const getFranchisesRes = await request(app).get("/api/franchise");
+
+  expect(getFranchisesRes.status).toBe(200);
+  expect(getFranchisesRes.body.length).toBeGreaterThanOrEqual(1);
+});
+
+test("get all franchises by a certain user", async () => {
+  const getFranchisesRes = await request(app)
+    .get(`/api/franchise/${loginAdminRes.body.user.id}`)
+    .set(`Authorization`, `Bearer ${adminAuthToken}`);
+
+  expect(getFranchisesRes.status).toBe(200);
+  expect(getFranchisesRes.body.length).toBeGreaterThanOrEqual(1);
+});

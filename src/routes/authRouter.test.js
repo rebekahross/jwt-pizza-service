@@ -1,6 +1,5 @@
 const request = require("supertest");
 const app = require("../service");
-const bcrypt = require("bcrypt");
 const { DB, Role } = require("../database/database.js");
 
 function randomName() {
