@@ -68,14 +68,59 @@ test("delete franchise", async () => {
 
   const createRes = await request(app)
     .post("/api/franchise")
-    .set(`Authorization`, `Bearer ${testUserAuthToken}`)
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
     .send(franchiseObject);
 
   const deleteRes = await request(app)
-    .delete(`/api/franchise/:${createRes.body.id}`)
+    .delete(`/api/franchise/${createRes.body.id}`)
     .set(`Authorization`, `Bearer ${adminAuthToken}`)
     .send(franchiseObject);
 
   expect(deleteRes.status).toBe(200);
   expect(deleteRes.body.message).toBe("franchise deleted");
+});
+
+test("delete franchise with no admin", async () => {
+  const franchiseName = randomName();
+  const franchiseObject = { name: franchiseName, admins: [adminUser] };
+
+  const createRes = await request(app)
+    .post("/api/franchise")
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(franchiseObject);
+
+  const deleteRes = await request(app)
+    .delete(`/api/franchise/${createRes.body.id}`)
+    .set(`Authorization`, `Bearer ${testUserAuthToken}`)
+    .send(franchiseObject);
+
+  expect(deleteRes.status).toBe(403);
+  expect(deleteRes.body.message).toBe("unable to delete a franchise");
+});
+
+test("create store", async () => {
+  const franchiseName = randomName();
+  const franchiseObject = { name: franchiseName, admins: [adminUser] };
+
+  const createFranchiseRes = await request(app)
+    .post("/api/franchise")
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(franchiseObject);
+
+  console.log(createFranchiseRes);
+
+  const storeName = randomName();
+  const storeObject = {
+    name: storeName,
+    franchiseId: createFranchiseRes.body.id,
+  };
+  console.log(storeObject);
+  const createStoreRes = await request(app)
+    .post(`/api/franchise/${createFranchiseRes.body.id}/store`)
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(storeObject);
+
+  expect(createStoreRes.status).toBe(200);
+  expect(createStoreRes.body.name).toBe(storeName);
+  expect(createStoreRes.body.franchiseId).toBe(createFranchiseRes.body.id);
 });
