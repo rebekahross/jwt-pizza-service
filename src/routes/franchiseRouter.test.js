@@ -38,7 +38,6 @@ beforeEach(async () => {
 });
 
 test("create franchise", async () => {
-  console.log(adminAuthToken);
   const franchiseName = randomName();
   const franchiseObject = { name: franchiseName, admins: [adminUser] };
   const createRes = await request(app)
@@ -48,4 +47,35 @@ test("create franchise", async () => {
 
   expect(createRes.status).toBe(200);
   expect(createRes.body.name).toBe(franchiseName);
+});
+
+test("create franchise with non-admin", async () => {
+  const franchiseName = randomName();
+  const franchiseObject = { name: franchiseName, admins: [adminUser] };
+
+  const createRes = await request(app)
+    .post("/api/franchise")
+    .set(`Authorization`, `Bearer ${testUserAuthToken}`)
+    .send(franchiseObject);
+
+  expect(createRes.status).toBe(403);
+  expect(createRes.body.message).toBe("unable to create a franchise");
+});
+
+test("delete franchise", async () => {
+  const franchiseName = randomName();
+  const franchiseObject = { name: franchiseName, admins: [adminUser] };
+
+  const createRes = await request(app)
+    .post("/api/franchise")
+    .set(`Authorization`, `Bearer ${testUserAuthToken}`)
+    .send(franchiseObject);
+
+  const deleteRes = await request(app)
+    .delete(`/api/franchise/:${createRes.body.id}`)
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(franchiseObject);
+
+  expect(deleteRes.status).toBe(200);
+  expect(deleteRes.body.message).toBe("franchise deleted");
 });
