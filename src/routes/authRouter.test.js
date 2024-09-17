@@ -8,18 +8,27 @@ function randomName() {
 }
 
 async function createAdminUser() {
-  const password = await bcrypt.hash("toomanysecrets", 10);
-  let user = { password: password, roles: [{ role: Role.Admin }] };
+  let user = { password: "toomanysecrets", roles: [{ role: Role.Admin }] };
   user.name = randomName();
   user.email = user.name + "@admin.com";
 
   await DB.addUser(user);
+
+  user.password = "toomanysecrets";
+
   return user;
 }
 
 let testUserAuthToken;
 let testUser;
 let registerRes;
+let adminUser;
+let loginAdminRes;
+
+beforeAll(async () => {
+  adminUser = await createAdminUser();
+  loginAdminRes = await request(app).put("/api/auth").send(adminUser);
+});
 
 beforeEach(async () => {
   testUser = { name: randomName(), email: "reg@test.com", password: "a" };
@@ -70,29 +79,18 @@ test("authenticate token that doesn't exist", async () => {
 });
 
 test("update user", async () => {
-  const adminUser = await createAdminUser();
-  console.log("======in update user==========");
-  console.log(adminUser);
-  const loginRes = await request(app).put("/api/auth").send(adminUser);
-  console.log(loginRes.status);
-
   const updatedUser = {
-    id: registerRes.body.id,
+    id: registerRes.body.user.id,
     email: randomName() + "@example.com",
     password: randomName(),
   };
 
-  console.log(updatedUser);
-
   const updateRes = await request(app)
-    .put(`/api/auth/${registerRes.body.id}`)
-    .set(`Authorization`, `Bearer ${loginRes.body.token}`)
+    .put(`/api/auth/${registerRes.body.user.id}`)
+    .set(`Authorization`, `Bearer ${loginAdminRes.body.token}`)
     .send(updatedUser);
 
-  // console.log(updateRes);
-
   expect(updateRes.status).toBe(200);
-  console.log("=====exiting update user======");
 });
 
 test("update user without admin role", async () => {

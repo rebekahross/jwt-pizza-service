@@ -12,6 +12,8 @@ async function createAdminUser() {
   user.email = user.name + "@admin.com";
 
   await DB.addUser(user);
+
+  user.password = "toomanysecrets";
   return user;
 }
 
@@ -20,25 +22,30 @@ let testUser;
 let registerRes;
 let adminUser;
 let loginAdminRes;
+let adminAuthToken;
+
+beforeAll(async () => {
+  adminUser = await createAdminUser();
+  loginAdminRes = await request(app).put("/api/auth").send(adminUser);
+  adminAuthToken = loginAdminRes.body.token;
+});
 
 beforeEach(async () => {
   testUser = { name: randomName(), email: "reg@test.com", password: "a" };
   testUser.email = randomName() + "@test.com";
   registerRes = await request(app).post("/api/auth").send(testUser);
   testUserAuthToken = registerRes.body.token;
-
-  adminUser = createAdminUser();
-  loginAdminRes = await request(app).put("/api/auth").send(adminUser);
-  //   console.log(loginAdminRes);
 });
 
-test("login", async () => {
-  const loginRes = await request(app).put("/api/auth").send(testUser);
-  expect(loginRes.status).toBe(200);
-  expect(loginRes.body.token).toMatch(
-    /^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/
-  );
+test("create franchise", async () => {
+  console.log(adminAuthToken);
+  const franchiseName = randomName();
+  const franchiseObject = { name: franchiseName, admins: [adminUser] };
+  const createRes = await request(app)
+    .post("/api/franchise")
+    .set(`Authorization`, `Bearer ${adminAuthToken}`)
+    .send(franchiseObject);
 
-  const { password, ...user } = { ...testUser, roles: [{ role: "diner" }] };
-  expect(loginRes.body.user).toMatchObject(user);
+  expect(createRes.status).toBe(200);
+  expect(createRes.body.name).toBe(franchiseName);
 });
