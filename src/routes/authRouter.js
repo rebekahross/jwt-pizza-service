@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const config = require("../config.js");
 const { asyncHandler } = require("../endpointHelper.js");
 const { DB, Role } = require("../database/database.js");
+const metrics = require("../metrics.js");
 
 const authRouter = express.Router();
 
@@ -103,6 +104,13 @@ authRouter.post(
     });
     const auth = await setAuth(user);
     res.json({ user: user, token: auth });
+    metrics.incrementAuthAttempts();
+    if (res.status == 200) {
+      metrics.incrementActiveUsers();
+      metrics.incrementSuccessfulAuthAttempts();
+    } else {
+      metrics.incrementFailedAuthAttempts();
+    }
   })
 );
 
@@ -111,9 +119,25 @@ authRouter.put(
   "/",
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const user = await DB.getUser(email, password);
-    const auth = await setAuth(user);
-    res.json({ user: user, token: auth });
+    try {
+      const user = await DB.getUser(email, password);
+      const auth = await setAuth(user);
+      res.json({ user: user, token: auth });
+      metrics.incrementAuthAttempts();
+      metrics.incrementActiveUsers();
+      metrics.incrementSuccessfulAuthAttempts();
+    } catch (error) {
+      if (error.message === "unknown user") {
+        res
+          .status(401)
+          .json({ message: "Unauthorized: Invalid email or password" });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+
+      metrics.incrementAuthAttempts();
+      metrics.incrementFailedAuthAttempts();
+    }
   })
 );
 
@@ -124,6 +148,7 @@ authRouter.delete(
   asyncHandler(async (req, res) => {
     clearAuth(req);
     res.json({ message: "logout successful" });
+    metrics.decrementActiveUsers();
   })
 );
 
@@ -138,7 +163,6 @@ authRouter.put(
     if (user.id !== userId && !user.isRole(Role.Admin)) {
       return res.status(403).json({ message: "unauthorized" });
     }
-
     const updatedUser = await DB.updateUser(userId, email, password);
     res.json(updatedUser);
   })
