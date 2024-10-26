@@ -4,6 +4,7 @@ const orderRouter = require("./routes/orderRouter.js");
 const franchiseRouter = require("./routes/franchiseRouter.js");
 const version = require("./version.json");
 const metrics = require("./metrics.js");
+const config = require("./config.js");
 
 const app = express();
 app.use(express.json());
