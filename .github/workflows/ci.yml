@@ -37,9 +37,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
       - name: Write config file
         run: |
           echo "module.exports = {
@@ -65,6 +62,9 @@ jobs:
               apiKey: '${{ secrets.METRICS_API_KEY }}',
             }
           };" > src/config.js
+
+      - name: Lint
+        run: npm run lint
 
       - name: Tests
         run: npm test
