@@ -112,6 +112,10 @@ jobs:
           name: package
           path: dist/
 
+      - name: Annotate deployment in Grafana
+        run: |
+          curl -s -X POST https://rebaross.grafana.net/api/annotations -H "Authorization: Bearer ${{ secrets.GRAFANA_ACCESS_TOKEN }}" -H "Content-Type:application/json" -d '{"dashboardUID":"de107q3z55ypsd", "panelId":4, "tags":["backend","production"], "text":"Version '"$version"' deployed" }'
+
   deploy:
     runs-on: ubuntu-latest
     permissions:
