@@ -9,7 +9,6 @@ const Logger = require("pizza-logger");
 class DB {
   constructor() {
     this.initialized = this.initializeDatabase();
-    this.logger = new Logger(config);
   }
 
   async getMenu() {
@@ -388,17 +387,19 @@ class DB {
   }
 
   async query(connection, sql, params) {
+    const logger = new Logger(config);
+
     const query = {
       reqBody: sql,
     };
 
-    this.logger.dbLogger(query);
+    logger.dbLogger(query);
     try {
       const [results] = await connection.execute(sql, params);
 
       return results;
     } catch (error) {
-      this.logger.unhandledErrorLogger(error);
+      logger.unhandledErrorLogger(error);
     }
   }
 
