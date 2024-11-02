@@ -17,10 +17,6 @@ class Metrics {
       successful: 0,
       failed: 0,
     };
-    // this.pizzaSold = 0;
-    // this.pizzaRevenue = 0;
-    // this.creationLatency = 0;
-    // this.creationFailures = 0;
 
     this.pizzaMetrics = {
       sold: 0,

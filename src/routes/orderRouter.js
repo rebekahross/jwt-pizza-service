@@ -4,7 +4,9 @@ const { Role, DB } = require("../database/database.js");
 const { authRouter } = require("./authRouter.js");
 const { asyncHandler, StatusCodeError } = require("../endpointHelper.js");
 const metrics = require("../metrics.js");
+const Logger = require("pizza-logger");
 
+const logger = new Logger(config);
 const orderRouter = express.Router();
 
 orderRouter.endpoints = [
@@ -128,7 +130,12 @@ orderRouter.post(
         order,
       }),
     });
+    console.log(r);
     const j = await r.json();
+
+    // logger.factoryLogger(j.jwt);
+    console.log("Hit endpoint");
+    console.log(j);
 
     const orderDuration = Date.now() - start;
     const orderAmount = orderReq.items.reduce(
@@ -140,7 +147,10 @@ orderRouter.post(
     if (r.ok) {
       metrics.trackPurchase(numSold, orderAmount, orderDuration, true);
       res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
+      logger.factoryLogger(j);
     } else {
+      logger.log(logger.statusToLogLevel(r.status), "factory", j);
+      logger.unhandledErrorLogger(r);
       metrics.trackPurchase(0, 0, orderDuration, false);
       res.status(500).send({
         message: "Failed to fulfill order at factory",

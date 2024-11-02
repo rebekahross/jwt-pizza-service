@@ -4,9 +4,12 @@ const config = require("../config.js");
 const { StatusCodeError } = require("../endpointHelper.js");
 const { Role } = require("../model/model.js");
 const dbModel = require("./dbModel.js");
+const Logger = require("pizza-logger");
+
 class DB {
   constructor() {
     this.initialized = this.initializeDatabase();
+    this.logger = new Logger(config);
   }
 
   async getMenu() {
@@ -385,8 +388,18 @@ class DB {
   }
 
   async query(connection, sql, params) {
-    const [results] = await connection.execute(sql, params);
-    return results;
+    const query = {
+      reqBody: sql,
+    };
+
+    this.logger.dbLogger(query);
+    try {
+      const [results] = await connection.execute(sql, params);
+
+      return results;
+    } catch {
+      this.logger.unhandledErrorLogger(results);
+    }
   }
 
   async getID(connection, key, value, table) {
