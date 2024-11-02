@@ -397,8 +397,8 @@ class DB {
       const [results] = await connection.execute(sql, params);
 
       return results;
-    } catch {
-      this.logger.unhandledErrorLogger(results);
+    } catch (error) {
+      this.logger.unhandledErrorLogger(error);
     }
   }
 
